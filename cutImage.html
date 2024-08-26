@@ -1,0 +1,125 @@
+<head>
+  <style>
+    .result > div {
+      width: 100%;
+      display: flex;
+      justify-content: space-evenly;
+      margin-top: 20px;
+    }
+
+    p {
+      margin: 0;
+      text-align: center;
+      font-weight: 700;
+      font-size: 1.25em;
+    }
+
+    .result .paragraph-wrapper {
+      margin-top: 5px;
+    }
+  </style>
+</head>
+
+<input class="column" placeholder="column" />
+<input class="row" placeholder="row" />
+<input class="image" placeholder="link image" />
+<button disabled class="generate">Generate</button>
+<button class="answer">Answer</button>
+<div class="result"></div>
+<p class="showing-answer"></p>
+
+<script>
+  const answers = [];
+
+  function getImageMetadata(url, callback) {
+    const img = new Image();
+    img.onload = () => callback(null, img);
+    img.onerror = (err) => callback(err);
+    img.src = url;
+  }
+
+  let imageSize = {};
+
+  document.querySelector(".image").addEventListener("change", function () {
+    getImageMetadata(this.value, (err, img) => {
+      imageSize = { width: img.naturalWidth, height: img.naturalHeight };
+      document.querySelector("button").disabled = false;
+    });
+  });
+
+  document.querySelector(".generate").addEventListener("click", function () {
+    let row = document.querySelector(".row").value;
+    let column = document.querySelector(".column").value;
+    let image = document.querySelector(".image").value;
+    const totalPieces = row * column;
+
+    for (let i = 0; i < totalPieces; i++) {
+      answers[i] = i;
+    }
+
+    for (let i = 0; i < totalPieces; i++) {
+      let randomIndex = Math.floor(Math.random() * totalPieces);
+      let temp = answers[i];
+      answers[i] = answers[randomIndex];
+      answers[randomIndex] = temp;
+    }
+
+    let imageWidth = imageSize.width > 1000 ? 1000 : imageSize.width;
+    let imageHeight = (imageSize.height * imageWidth) / imageSize.width;
+    const theFirstChoice = { width: imageWidth, height: imageHeight };
+    imageHeight = imageSize.height > 500 ? 500 : imageSize.height;
+    imageWidth = (imageHeight * imageSize.width) / imageSize.height;
+    const theSecondChoice = { width: imageWidth, height: imageHeight };
+    const choice =
+      theFirstChoice.height < theSecondChoice.height
+        ? theFirstChoice
+        : theSecondChoice;
+    imageWidth = choice.width;
+    imageHeight = choice.height;
+
+    let imagePieces = "";
+    let pieceIndex = 0;
+    let pieceAnswer = 0;
+    for (let i = 0; i < row; i++) {
+      imagePieces += "<div>";
+      for (let i = 0; i < column; i++) {
+        imagePieces += `<div style="
+            overflow:hidden;width:${imageWidth / column}px;
+            height:${imageHeight / row}px;">
+                <image src="${image}" alt="" style="width:${imageWidth}px; height:${imageHeight}px;
+                object-position:
+                -${((answers[pieceIndex] % column) * imageWidth) / column}px
+                -${
+                  (Math.floor(answers[pieceIndex] / column) * imageHeight) / row
+                }px;">
+            </div>`;
+        ++pieceIndex;
+      }
+      imagePieces += "</div>";
+      imagePieces += `<div class="paragraph-wrapper">`;
+      for (let i = 0; i < column; i++) {
+        ++pieceAnswer;
+        imagePieces += `<p style="width:${
+          imageWidth / column
+        }px;">${pieceAnswer}</p>`;
+      }
+      imagePieces += "</div>";
+    }
+    document.querySelector(".result").innerHTML = imagePieces;
+  });
+
+  document.querySelector(".answer").addEventListener("click", function () {
+    debugger;
+    let temp = [];
+    for (let i = 0; i < answers.length; i++) {
+      temp.push({ first: answers[i], second: i + 1 });
+    }
+
+    temp.sort(function (a, b) {
+      return a.first - b.first;
+    });
+
+    let showingAnswers = temp.map((temp) => temp.second);
+    document.querySelector(".showing-answer").innerText = showingAnswers;
+  });
+</script>
